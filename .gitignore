@@ -1,0 +1,86 @@
+# C++ Build Artifacts
+*.o
+*.obj
+*.out
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Compiled executable (from Makefile)
+main
+
+# Debug symbols (macOS)
+*.dSYM/
+main.dSYM/
+
+# CMake (if added later)
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+cmake-build-*/
+*.cmake
+!CMakeLists.txt
+
+# Build directories
+build/
+Build/
+out/
+bin/
+obj/
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE - Visual Studio Code
+.vscode/
+*.code-workspace
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# IDE - CLion
+cmake-build-*/
+
+# IDE - Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+
+# ImGui state file (user-specific UI layout)
+imgui.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.*.swp
+
+# Log files
+*.log
+
+# Dependencies (uncomment if you want to ignore external libs)
+# external/
+
+# Core dumps
+core
+core.*
+
+# Valgrind output
+vgcore.*
+*.memcheck
+
+# Profiling data
+*.prof
+gmon.out
