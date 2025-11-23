@@ -71,7 +71,13 @@ imgui.ini
 *.log
 
 # Dependencies (uncomment if you want to ignore external libs)
-# external/
+external/SFML-3.0.2/doc
+external/SFML-3.0.2/examples
+external/SFML-3.0.2/Frameworks
+external/imgui-master/examples
+external/imgui-master/docs
+external/imgui-sfml-master/examples
+fonts/
 
 # Core dumps
 core
