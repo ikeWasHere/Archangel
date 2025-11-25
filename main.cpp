@@ -4,15 +4,27 @@
 
 #include <iostream>
 #include <vector>
+#include <memory>
+#include <string>
 
-int main(int argc, char *argv[])
+struct ShapeData
 {
-    const int wWidth = 1280;
-    const int wHeight = 720;
+    std::string name;
+    sf::Shape *shape = nullptr;
+    sf::Vector2f velocity{0.f, 0.f};
+    bool visible = true;
+};
+
+void initShapes(std::vector<std::unique_ptr<sf::Drawable>> &shapes,
+                std::vector<ShapeData> &shapeData);
+
+int main()
+{
+    const int wWidth = 800;
+    const int wHeight = 700;
     sf::RenderWindow window(sf::VideoMode({wWidth, wHeight}), "My Window");
     window.setFramerateLimit(60);
 
-    // Initialize ImGui-SFML and create a clock for its internal timing
     if (!ImGui::SFML::Init(window))
     {
         std::cout << "Could not initialize window\n";
@@ -21,21 +33,11 @@ int main(int argc, char *argv[])
 
     sf::Clock deltaClock;
 
-    std::vector<sf::Shape> shapes;
+    std::vector<std::unique_ptr<sf::Drawable>> shapes;
+    std::vector<ShapeData> shapeData;
 
-    // Circle properties
-    float circleRadius = 100.0f;
-    int circleSegments = 32;
-    float circleSpeedX = 1.0f;
-    float circleSpeedY = 0.5f;
-    bool drawCircle = true;
-    bool drawText = true;
-    float c[3] = {0.0f, 1.0f, 1.0f};
+    initShapes(shapes, shapeData);
 
-    sf::CircleShape circle(circleRadius, circleSegments);
-    circle.setPosition({300.0f, 200.0f});
-
-    // Load and display text
     sf::Font myFont;
 
     if (!myFont.openFromFile("fonts/Arial.ttf"))
@@ -44,14 +46,12 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // Set up text object
     sf::Text text(myFont, "This is my text", 24);
     text.setPosition({0, wHeight - 45.0f});
 
-    // Main loop
     while (window.isOpen())
     {
-        // Handle events
+
         while (auto event = window.pollEvent())
         {
             // Pass event to IMGui to be parsed
@@ -67,67 +67,123 @@ int main(int argc, char *argv[])
             }
         }
 
-        // Update ImGui
         ImGui::SFML::Update(window, deltaClock.restart());
 
-        // ImGui windows
+        static int selectedIndex = 0;
+        if (shapeData.empty())
+            selectedIndex = -1;
+
         ImGui::Begin("Shape Properties");
 
-        ImGui::Text("Adjust circle properties:");
-        ImGui::Separator();
-
-        if (ImGui::SliderFloat("Radius", &circleRadius, 10.0f, 200.0f))
+        if (selectedIndex >= 0 && selectedIndex < (int)shapeData.size())
         {
-            circle.setRadius(circleRadius);
+            ShapeData &current = shapeData[selectedIndex];
+
+            if (ImGui::BeginCombo("Shape", current.name.c_str()))
+            {
+                for (int i = 0; i < (int)shapeData.size(); i++)
+                {
+                    bool isSelected = (i == selectedIndex);
+                    if (ImGui::Selectable(shapeData[i].name.c_str(), isSelected))
+                        selectedIndex = i;
+                    if (isSelected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+
+            ImGui::Checkbox("Draw Shape", &current.visible);
+            sf::Vector2f scale = current.shape->getScale();
+            float uniformScale = scale.x;
+            if (ImGui::SliderFloat("Scale", &uniformScale, 0.1f, 5.0f))
+            {
+                current.shape->setScale(sf::Vector2f{uniformScale, uniformScale});
+            }
+            ImGui::DragFloat2("Velocity", &current.velocity.x, 0.1f);
+
+            sf::Color col = current.shape->getFillColor();
+            float color[3] = {col.r / 255.f, col.g / 255.f, col.b / 255.f};
+            if (ImGui::ColorEdit3("Color", color))
+            {
+                current.shape->setFillColor(sf::Color(
+                    static_cast<std::uint8_t>(color[0] * 255),
+                    static_cast<std::uint8_t>(color[1] * 255),
+                    static_cast<std::uint8_t>(color[2] * 255)));
+            }
+
+            char nameBuff[32];
+            std::snprintf(nameBuff, sizeof(nameBuff), "%s", current.name.c_str());
+            if (ImGui::InputText("Name", nameBuff, sizeof(nameBuff)))
+            {
+                current.name = nameBuff;
+            }
         }
 
-        if (ImGui::ColorEdit3("Color", c))
-        {
-            circle.setFillColor(sf::Color(
-                static_cast<std::uint8_t>(c[0] * 255),
-                static_cast<std::uint8_t>(c[1] * 255),
-                static_cast<std::uint8_t>(c[2] * 255)));
-        }
-
         ImGui::Separator();
-
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                     1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
         ImGui::End();
 
-        // Set circle properties, because they may have been updated with the ui
-        circle.setPointCount(circleSegments);
-        circle.setRadius(circleRadius);
-
-        // Convert from the ui floates to sfml Uint8
-        circle.setFillColor(sf::Color(
-            uint8_t(c[0] * 255),
-            uint8_t(c[1] * 255),
-            uint8_t(c[2] * 255)));
-
-        circle.setPosition({circle.getPosition().x + circleSpeedX, circle.getPosition().y + circleSpeedY});
-
-        if (circle.getPosition().x > wWidth)
+        for (auto &info : shapeData)
         {
-            circle.setPosition({300.0f, 200.0f});
+            if (!info.visible)
+                continue;
+            info.shape->move(info.velocity);
         }
 
-        // Render
+        // Render order matters
         window.clear();
-        if (drawCircle)
+        for (std::size_t i = 0; i < shapes.size(); i++)
         {
-            window.draw(circle);
+            if (!shapeData[i].visible)
+                continue;
+            window.draw(*shapes[i]);
         }
-        if (drawText)
+        window.draw(text);
+
+        for (auto &info : shapeData)
         {
-            window.draw(text);
+            if (!info.visible)
+                continue;
+
+            // TODO: Implement name label follow on shape
         }
-        ImGui::SFML::Render(window); // Draw ui last so its on top
+
+        ImGui::SFML::Render(window);
         window.display();
     }
 
-    // Cleanup
     ImGui::SFML::Shutdown();
     return 0;
+}
+
+void initShapes(std::vector<std::unique_ptr<sf::Drawable>> &shapes,
+                std::vector<ShapeData> &shapeData)
+{
+    auto circle = std::make_unique<sf::CircleShape>(100.f, 32);
+    circle->setPosition({300.f, 200.f});
+    circle->setFillColor(sf::Color::Blue);
+
+    ShapeData circle1;
+    circle1.name = "CBlue";
+    circle1.shape = circle.get();
+    circle1.velocity = {1.f, 0.5f};
+    circle1.visible = true;
+
+    shapes.push_back(std::move(circle));
+    shapeData.push_back(circle1);
+
+    auto rect = std::make_unique<sf::RectangleShape>(sf::Vector2f{150.0f, 80.0f});
+    rect->setPosition({100.f, 100.f});
+    rect->setFillColor(sf::Color::Red);
+
+    ShapeData rect1;
+    rect1.name = "RRed";
+    rect1.shape = rect.get();
+    rect1.velocity = {1.f, 0.5f};
+    rect1.visible = true;
+
+    shapes.push_back(std::move(rect));
+    shapeData.push_back(rect1);
 }
