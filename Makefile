@@ -3,14 +3,14 @@ CXX = clang++
 CXXFLAGS = -std=c++17 -Wall -O2
 
 # SFML paths
-SFML_DIR = $(HOME)/Archangel/external/SFML-3.0.2
+SFML_DIR = $(HOME)/Archangel/vendor/SFML-3.0.2
 SFML_INCLUDE = $(SFML_DIR)/include
 SFML_LIB = $(SFML_DIR)/lib
 SFML_FRAMEWORKS = $(SFML_DIR)/Frameworks
 
 # ImGui paths
-IMGUI_DIR = external/imgui-master
-IMGUI_SFML_DIR = external/imgui-sfml-master
+IMGUI_DIR = vendor/imgui
+IMGUI_SFML_DIR = vendor/imgui-sfml
 
 # Include paths
 INCLUDES = -I$(SFML_INCLUDE) -I$(IMGUI_DIR) -I$(IMGUI_SFML_DIR)

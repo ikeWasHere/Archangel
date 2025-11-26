@@ -46,9 +46,6 @@ int main()
         return -1;
     }
 
-    sf::Text text(myFont, "This is my text", 24);
-    text.setPosition({0, wHeight - 45.0f});
-
     while (window.isOpen())
     {
 
@@ -59,12 +56,6 @@ int main()
 
             if (event->is<sf::Event::Closed>())
                 window.close();
-
-            if (const auto *keyPressed = event->getIf<sf::Event::KeyPressed>())
-            {
-                if (keyPressed->scancode == sf::Keyboard::Scancode::Escape)
-                    window.close();
-            }
         }
 
         ImGui::SFML::Update(window, deltaClock.restart());
@@ -93,7 +84,7 @@ int main()
             }
 
             ImGui::Checkbox("Draw Shape", &current.visible);
-            sf::Vector2f scale = current.shape->getScale();
+            sf::Vector2f const scale = current.shape->getScale();
             float uniformScale = scale.x;
             if (ImGui::SliderFloat("Scale", &uniformScale, 0.1f, 5.0f))
             {
@@ -101,7 +92,7 @@ int main()
             }
             ImGui::DragFloat2("Velocity", &current.velocity.x, 0.1f);
 
-            sf::Color col = current.shape->getFillColor();
+            sf::Color const col = current.shape->getFillColor();
             float color[3] = {col.r / 255.f, col.g / 255.f, col.b / 255.f};
             if (ImGui::ColorEdit3("Color", color))
             {
@@ -129,6 +120,19 @@ int main()
         {
             if (!info.visible)
                 continue;
+            auto bounds = info.shape->getGlobalBounds();
+
+            if (bounds.position.x <= 0.f ||
+                bounds.position.x + bounds.size.x >= static_cast<float>(wWidth))
+            {
+                info.velocity.x *= -1.f;
+            }
+
+            if (bounds.position.y <= 0.f ||
+                bounds.position.y + bounds.size.y >= static_cast<float>(wHeight))
+            {
+                info.velocity.y *= -1.f;
+            }
             info.shape->move(info.velocity);
         }
 
@@ -140,14 +144,24 @@ int main()
                 continue;
             window.draw(*shapes[i]);
         }
-        window.draw(text);
 
         for (auto &info : shapeData)
         {
             if (!info.visible)
                 continue;
+            auto bounds = info.shape->getGlobalBounds();
+            sf::Vector2f center{
+                bounds.position.x + bounds.size.x * 0.5f,
+                bounds.position.y + bounds.size.y * 0.5f};
 
-            // TODO: Implement name label follow on shape
+            sf::Text nameLabel(myFont, info.name, 18);
+            sf::FloatRect textBounds = nameLabel.getLocalBounds();
+            nameLabel.setOrigin({textBounds.position.x + textBounds.size.x * 0.5f,
+                                 textBounds.position.y + textBounds.size.y * 0.5f
+
+            });
+            nameLabel.setPosition(center);
+            window.draw(nameLabel);
         }
 
         ImGui::SFML::Render(window);
@@ -161,29 +175,53 @@ int main()
 void initShapes(std::vector<std::unique_ptr<sf::Drawable>> &shapes,
                 std::vector<ShapeData> &shapeData)
 {
-    auto circle = std::make_unique<sf::CircleShape>(100.f, 32);
-    circle->setPosition({300.f, 200.f});
-    circle->setFillColor(sf::Color::Blue);
+    auto circle_shape1 = std::make_unique<sf::CircleShape>(100.f, 32);
+    circle_shape1->setPosition({300.f, 200.f});
+    circle_shape1->setFillColor(sf::Color::Blue);
 
     ShapeData circle1;
     circle1.name = "CBlue";
-    circle1.shape = circle.get();
+    circle1.shape = circle_shape1.get();
     circle1.velocity = {1.f, 0.5f};
     circle1.visible = true;
 
-    shapes.push_back(std::move(circle));
-    shapeData.push_back(circle1);
+    auto circle_shape2 = std::make_unique<sf::CircleShape>(120.f, 50);
+    circle_shape2->setPosition({370.f, 150.f});
+    circle_shape2->setFillColor(sf::Color::Green);
 
-    auto rect = std::make_unique<sf::RectangleShape>(sf::Vector2f{150.0f, 80.0f});
-    rect->setPosition({100.f, 100.f});
-    rect->setFillColor(sf::Color::Red);
+    ShapeData circle2;
+    circle2.name = "CGreen";
+    circle2.shape = circle_shape2.get();
+    circle2.velocity = {2.f, 1.f};
+    circle2.visible = true;
+
+    shapes.push_back(std::move(circle_shape1));
+    shapes.push_back(std::move(circle_shape2));
+    shapeData.push_back(circle1);
+    shapeData.push_back(circle2);
+
+    auto rect_shape1 = std::make_unique<sf::RectangleShape>(sf::Vector2f{80.0f, 150.0f});
+    rect_shape1->setPosition({100.f, 100.f});
+    rect_shape1->setFillColor(sf::Color::Yellow);
 
     ShapeData rect1;
-    rect1.name = "RRed";
-    rect1.shape = rect.get();
-    rect1.velocity = {1.f, 0.5f};
+    rect1.name = "RYellow";
+    rect1.shape = rect_shape1.get();
+    rect1.velocity = {1.2f, 1.f};
     rect1.visible = true;
 
-    shapes.push_back(std::move(rect));
+    auto rect_shape2 = std::make_unique<sf::RectangleShape>(sf::Vector2f{200.0f, 100.0f});
+    rect_shape2->setPosition({300.f, 400.f});
+    rect_shape2->setFillColor(sf::Color::Red);
+
+    ShapeData rect2;
+    rect2.name = "RRed";
+    rect2.shape = rect_shape2.get();
+    rect2.velocity = {1.9f, 2.f};
+    rect2.visible = true;
+
+    shapes.push_back(std::move(rect_shape1));
+    shapes.push_back(std::move(rect_shape2));
     shapeData.push_back(rect1);
+    shapeData.push_back(rect2);
 }
