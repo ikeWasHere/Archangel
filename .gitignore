@@ -77,6 +77,7 @@ vendor/SFML-3.0.2/examples/
 vendor/SFML-3.0.2/Frameworks/
 vendor/imgui/examples/
 vendor/imgui/docs/
+vendor/imgui/misc/
 vendor/imgui-sfml/examples/
 res/fonts/
 
