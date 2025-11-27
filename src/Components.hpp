@@ -21,13 +21,13 @@ public:
         : pos(p), velocity(v), angle(a) {}
 };
 
-class Cshape : public Component
+class CShape : public Component
 {
 public:
     sf::CircleShape circle;
 
-    Cshape() = default;
-    Cshape(float radius, size_t points, const sf::Color &fill, const sf::Color &outline, float thickness)
+    CShape() = default;
+    CShape(float radius, size_t points, const sf::Color &fill, const sf::Color &outline, float thickness)
         : circle(radius, points)
     {
         circle.setFillColor(fill);

@@ -1,6 +1,6 @@
 # Compiler settings
 CXX = clang++
-CXXFLAGS = -std=c++17 -Wall -O2
+CXXFLAGS = -std=c++23 -Wall -O2
 
 # SFML paths
 SFML_DIR = $(HOME)/Archangel/vendor/SFML-3.0.2
