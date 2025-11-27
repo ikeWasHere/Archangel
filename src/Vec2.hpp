@@ -23,7 +23,7 @@ public:
     {
     }
 
-    Vec2(cosnt sf::Vector2i &vec)
+    Vec2(const sf::Vector2i &vec)
         : x(T(vec.x)), y(T(vec.y))
     {
     }
