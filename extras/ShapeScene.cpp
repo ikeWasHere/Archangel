@@ -40,7 +40,7 @@ int main()
 
     sf::Font myFont;
 
-    if (!myFont.openFromFile("fonts/Arial.ttf"))
+    if (!myFont.openFromFile("res/fonts/Arial.ttf"))
     {
         std::cout << "Could not load font!\n";
         return -1;

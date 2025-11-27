@@ -11,6 +11,7 @@
 
 # Compiled executable (from Makefile)
 main
+sfml-app
 
 # Debug symbols (macOS)
 *.dSYM/
@@ -70,14 +71,14 @@ imgui.ini
 # Log files
 *.log
 
-# Dependencies (uncomment if you want to ignore external libs)
-external/SFML-3.0.2/doc
-external/SFML-3.0.2/examples
-external/SFML-3.0.2/Frameworks
-external/imgui-master/examples
-external/imgui-master/docs
-external/imgui-sfml-master/examples
-fonts/
+# Dependencies
+vendor/SFML-3.0.2/doc/
+vendor/SFML-3.0.2/examples/
+vendor/SFML-3.0.2/Frameworks/
+vendor/imgui/examples/
+vendor/imgui/docs/
+vendor/imgui-sfml/examples/
+res/fonts/
 
 # Core dumps
 core
@@ -90,3 +91,5 @@ vgcore.*
 # Profiling data
 *.prof
 gmon.out
+
+
