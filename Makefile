@@ -33,7 +33,7 @@ IMGUI_SOURCES = $(IMGUI_DIR)/imgui.cpp \
                 $(IMGUI_SFML_DIR)/imgui-SFML.cpp
 
 # Application source files
-APP_SOURCES = main.cpp
+APP_SOURCES = src/main.cpp
 
 # All sources
 SOURCES = $(APP_SOURCES) $(IMGUI_SOURCES)
@@ -47,7 +47,7 @@ $(EXECUTABLE): $(OBJECTS)
 	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS) $(LIBS) $(FRAMEWORKS)
 
 # Compile application files
-main.o: main.cpp
+main.o: src/main.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 # Compile ImGui files
