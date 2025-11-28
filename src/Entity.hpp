@@ -25,6 +25,8 @@ class Entity
 
 public:
     Entity() = default;
+    Entity(const std::string &tag, size_t id)
+        : m_tag(tag), m_id(id) {}
 
     template <typename T, typename... Args>
     T &add(Args &&...args)
