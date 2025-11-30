@@ -93,4 +93,6 @@ vgcore.*
 *.prof
 gmon.out
 
+.clang-format
+
 

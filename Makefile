@@ -33,11 +33,11 @@ IMGUI_SOURCES = $(IMGUI_DIR)/imgui.cpp \
                 $(IMGUI_SFML_DIR)/imgui-SFML.cpp
 
 # Application source files
-APP_SOURCES = src/main.cpp
+APP_SOURCES = src/main.cpp src/Game.cpp
 
 # All sources
 SOURCES = $(APP_SOURCES) $(IMGUI_SOURCES)
-OBJECTS = main.o imgui.o imgui_demo.o imgui_draw.o imgui_tables.o imgui_widgets.o imgui-SFML.o
+OBJECTS = main.o Game.o imgui.o imgui_demo.o imgui_draw.o imgui_tables.o imgui_widgets.o imgui-SFML.o
 EXECUTABLE = sfml-app
 
 # Build rules
@@ -48,6 +48,9 @@ $(EXECUTABLE): $(OBJECTS)
 
 # Compile application files
 main.o: src/main.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+Game.o: src/Game.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 # Compile ImGui files

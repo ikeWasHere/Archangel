@@ -77,4 +77,9 @@ public:
     bool shoot = false;
 
     CInput() = default;
+
+    bool isMoving()
+    {
+        return (up || down || left || right);
+    }
 };
