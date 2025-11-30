@@ -1,9 +1,9 @@
 #pragma once
 #include "Entity.hpp"
 
-#include <vector>
 #include <map>
 #include <memory>
+#include <vector>
 
 using EntityVec = std::vector<std::shared_ptr<Entity>>;
 using EntityMap = std::map<std::string, EntityVec>;
@@ -17,10 +17,15 @@ class EntityManager
 
     void removeDeadEntities(EntityVec &vec)
     {
-        // TODO: remove all entities from vec that are not alive
+        vec.erase(std::remove_if(vec.begin(), vec.end(),
+                            [](const std::shared_ptr<Entity> &e) 
+                            { 
+                                return !e->isAlive();    
+                            }),
+                  vec.end());
     }
 
-public:
+  public:
     EntityManager() = default;
 
     void update()
@@ -34,7 +39,6 @@ public:
 
         m_entitiesToAdd.clear();
 
-        // remove dead entites from the vector of all entities
         removeDeadEntities(m_entities);
 
         // remove dead entities from each vector in the entity map
@@ -58,7 +62,9 @@ public:
 
     const EntityVec &getEntities(const std::string &tag) const
     {
-        return m_entityMap.at(tag);
+        static const EntityVec empty;
+        auto it = m_entityMap.find(tag);
+        return (it != m_entityMap.end()) ? it->second : empty;
     }
 
     const EntityMap &getEntityMap() const
