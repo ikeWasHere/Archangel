@@ -43,6 +43,16 @@ class Game
     bool m_paused = false;
     bool m_configLoaded = false;
     bool m_imguiInitialized = false;
+    
+    struct SystemToggles
+    {
+        bool input = true;
+        bool spawner = true;
+        bool movement = true;
+        bool lifespan = true;
+        bool collision = true;
+        bool render = true;
+    } m_systems;
 
     void init(const std::string &config);
     void setPaused(bool paused);

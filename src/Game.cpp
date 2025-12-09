@@ -1,9 +1,11 @@
 #include "Game.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <random>
 #include <string>
+#include <cstdint>
 
 Game::Game(const std::string &config)
     : m_text(m_font, "Defualt", 18)
@@ -121,7 +123,7 @@ void Game::init(const std::string &path)
 
     m_window.create(
         sf::VideoMode({static_cast<unsigned int>(wWidth), static_cast<unsigned int>(wHeight)}),
-        "Assignment 2");
+        "Geometry Wars");
     m_window.setKeyRepeatEnabled(false);
     m_window.setFramerateLimit(fps);
 
@@ -143,10 +145,7 @@ std::shared_ptr<Entity> Game::player()
 }
 
 void Game::run()
-{
-    // TODO: add pause functionality in here
-    m_paused = true;
-
+{ 
     if (!m_configLoaded)
     {
         std::cerr << "Error: Cannot run game without a valid config\n";
@@ -158,17 +157,18 @@ void Game::run()
         sf::Time dtTime = m_deltaClock.restart();
         float dt = dtTime.asSeconds();
         m_entities.update();
-        ImGui::SFML::Update(m_window,dtTime);
+        ImGui::SFML::Update(m_window, dtTime);
 
-        sUserInput();
-        sEnemySpawner();
-        sMovement(dt);
-        sLifespan();
-        sCollision();
+        if (m_systems.input) sUserInput();
+        if (m_systems.spawner) sEnemySpawner();
+        if (m_systems.movement) sMovement(dt);
+        if (m_systems.lifespan) sLifespan();
+        if (m_systems.collision) sCollision();
+        
         sGUI();
-        sRender();
+        if (m_systems.render) sRender();
     
-       m_currentFrame++;
+        m_currentFrame++;
     }
 }
 
@@ -177,9 +177,10 @@ void Game::spawnPlayer()
     auto size = m_window.getSize();
     float spawnX = size.x * 0.5;
     float spawnY = size.y * 0.5;
+    float angVel = 180.f;
 
     auto e = m_entities.addEntity("player");
-    e->add<CTransform>(Vec2<float>(spawnX, spawnY), Vec2<float>(0.f, 0.f), 0.0f);
+    e->add<CTransform>(Vec2<float>(spawnX, spawnY), Vec2<float>(0.f, 0.f), 0.0f, angVel);
     e->add<CShape>(m_playerConfig.SR, m_playerConfig.V,
                    sf::Color(m_playerConfig.FR, m_playerConfig.FG, m_playerConfig.FB),
                    sf::Color(m_playerConfig.OR, m_playerConfig.OG, m_playerConfig.OB),
@@ -202,11 +203,15 @@ void Game::spawnEnemy()
     float vy = randFloat(m_enemyConfig.SMIN, m_enemyConfig.SMAX);
     Vec2<float> velocity(vx, vy);
 
+    float angVel = randFloat(-180.f, 180.f);
+    if (std::abs(angVel) < 30.f)
+        angVel = (angVel < 0 ? -30.f : 30.f);
+
     std::uniform_int_distribution<int> col(1, 255);
     sf::Color randomFill(col(m_rng), col(m_rng), col(m_rng));
 
     auto e = m_entities.addEntity("enemy");
-    e->add<CTransform>(pos, velocity, 0.0f);
+    e->add<CTransform>(pos, velocity, 0.0f, angVel);
     e->add<CShape>(m_enemyConfig.SR, rand_pts, randomFill,
                    sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB),
                    m_enemyConfig.OT);
@@ -218,6 +223,10 @@ void Game::spawnEnemy()
 void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
 {
     Vec2<float> spawnLocation = e->get<CTransform>().pos;
+    float angVel = randFloat(-180.f, 180.f);
+    if (std::abs(angVel) < 30.f)
+        angVel = (angVel < 0 ? -30.f : 30.f);
+
     auto parentFillCol = e->get<CShape>().circle.getFillColor();
     auto parentOutlineCol = e->get<CShape>().circle.getOutlineColor();
     // spawn a number of small enemies equal to the vertices of the original
@@ -230,7 +239,7 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
         Vec2<float> velocity(vx, vy);
         
         auto s = m_entities.addEntity("smallEnemy");
-        s->add<CTransform>(spawnLocation, velocity, 0.0f);
+        s->add<CTransform>(spawnLocation, velocity, 0.0f, angVel);
         s->add<CShape>(m_enemyConfig.SR / 2, parentPointCount,
              parentFillCol,
              parentOutlineCol,
@@ -238,10 +247,8 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
         s->add<CCollision>(m_enemyConfig.CR / 2);
         s->add<CLifespan>(m_enemyConfig.L);
     }
-    // - small enemies are worth double points of the original enemy
 }
 
-// spawns a bullet from a given entity to a target location
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2<float> &target)
 {
     Vec2<float> dir = target - entity->get<CTransform>().pos;
@@ -252,7 +259,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2<float> &target
     auto spawnPos = entity->get<CTransform>().pos;
 
     auto b = m_entities.addEntity("bullet");
-    b->add<CTransform>(spawnPos, velocity, 0.0f);
+    b->add<CTransform>(spawnPos, velocity, 0.0f, 0.0f);
     b->add<CShape>(m_bulletConfig.SR, m_bulletConfig.V,
                 sf::Color(m_bulletConfig.FR, m_bulletConfig.FG, m_bulletConfig.FB),
                 sf::Color(m_bulletConfig.OR, m_bulletConfig.OG, m_bulletConfig.OB),
@@ -293,47 +300,48 @@ void Game::sMovement(float dt)
         if (!e->has<CTransform>()) continue;
         auto &t = e->get<CTransform>();
         t.pos += t.velocity * dt;
+        t.angle += t.angVel * dt;
     }
-    //std::cout << "Current pos: " << "(" << pTransform.pos.x << ", " << pTransform.pos.y << ")" << '\n';
-    //std::cout << "Current dir: " << "(" << dir.x << ", " << dir.y << ")" << '\n';
-    //std::cout << "Current vel: " << "(" << pTransform.velocity.x << ", " << pTransform.velocity.y << ")" << '\n';
-    //std::cout << "Player speed (S): " << m_playerConfig.S << '\n';
 }
 
 void Game::sLifespan()
 {
-    // TODO: implement all lifespan functionality
-    //
-    // for all entities
-    //     if entity has no lifespan component, skip it
-    //     if entity has > 0 remaining lifespan, subtract 1
-    //     if it has lifespan and is alive
-    //         scale its alpha channel properly
-    //     if it has lifespan and its time is up
-    //         destroy the entity
-    for (auto e : m_entities.getEntities())
+    for (auto &e : m_entities.getEntities())
     {
         if (!e->has<CLifespan>()) continue;
-        auto &lifespan = e->get<CLifespan>().remaining;
-        auto &fillColor = e->get<CShape>().circle;
         
-        if (lifespan > 0) 
+        auto &life = e->get<CLifespan>();
+  
+        if (life.remaining > 0)
         {
-            lifespan -= 1;
-            //
+            life.remaining -= 1;
         }
-        
-        else
+
+        // Fade alpha 1:1 with remaining lifespan.
+        if (e->has<CShape>())
+        {
+            auto &circle = e->get<CShape>().circle;
+            const float ratio = std::clamp(life.remaining / static_cast<float>(life.lifespan), 0.f, 1.f);
+            auto applyAlpha = [ratio](sf::Color c)
+            {
+                c.a = static_cast<std::uint8_t>(ratio * 255.0f);
+                return c;
+            };
+            circle.setFillColor(applyAlpha(circle.getFillColor()));
+            circle.setOutlineColor(applyAlpha(circle.getOutlineColor()));
+        }
+
+        if (life.remaining <= 0)
         {
             e->destroy();
         }
-   
     }
 }
 
 void Game::sCollision()
 {
     int &pScore = player()->get<CScore>().score;
+    auto size = m_window.getSize();
     int bigEnemyPoints = 25;
     int smallEnemyPoints = 50;
     
@@ -386,7 +394,46 @@ void Game::sCollision()
         }
     }
 
+    // Collisions with walls
+    float w = static_cast<float>(size.x);
+    float h = static_cast<float>(size.y);
 
+    for (auto e : m_entities.getEntities())
+    {
+        if (!e->has<CCollision>() || !e->has<CTransform>()) continue;
+
+        auto &t = e->get<CTransform>();
+        auto &c = e->get<CCollision>();
+        float r = c.radius;
+
+        bool bouncedX = false;
+        bool bouncedY = false;
+
+        if (t.pos.x - r < 0.f)
+        {
+            t.pos.x = r;
+            bouncedX = true;
+        }
+        else if (t.pos.x + r > w)
+        {
+            t.pos.x = w - r;
+            bouncedX = true;
+        }
+
+        if (t.pos.y - r < 0.f)
+        {
+            t.pos.y = r;
+            bouncedY = true;
+        }
+        else if (t.pos.y + r > h)
+        {
+            t.pos.y = h - r;
+            bouncedY = true;
+        }
+
+        if (bouncedX) { t.velocity.x *= -1.f; }
+        if (bouncedY) { t.velocity.y *= -1.f; }
+    }
 }
 
 void Game::sEnemySpawner()
@@ -402,19 +449,38 @@ void Game::sEnemySpawner()
 void Game::sGUI()
 {
     ImGui::Begin("Geometry Wars");
+    if (ImGui::BeginTabBar("Geometry Wars TabBar"))
+    {
+        if (ImGui::BeginTabItem("Systems"))
+        {
+            ImGui::Checkbox("User Input", &m_systems.input);
+            ImGui::Checkbox("Enemy Spawner", &m_systems.spawner);
+            ImGui::Checkbox("Movement", &m_systems.movement);
+            ImGui::Checkbox("Lifespan", &m_systems.lifespan);
+            ImGui::Checkbox("Collision", &m_systems.collision);
+            ImGui::Checkbox("Render", &m_systems.render);
+            
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Entity Manager"))
+        {
+            
+            
+            ImGui::EndTabItem();
+        }
 
-    ImGui::Text("blah blah");
+        ImGui::EndTabBar();
+    }
 
+    
+    
     ImGui::End();
 }
 
 void Game::sRender()
 {
-    if (!m_window.isOpen())
-    {
-        return;
-    }
-
+    if (!m_window.isOpen()) return;
+    
     m_window.clear();
 
     for (auto &e : m_entities.getEntities())
@@ -425,7 +491,8 @@ void Game::sRender()
             auto &transform = e->get<CTransform>();
             
             shape.circle.setPosition(transform.pos);
-
+            shape.circle.setRotation(sf::degrees(transform.angle));
+           
             m_window.draw(shape.circle);
         }
     }
