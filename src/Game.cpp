@@ -464,7 +464,59 @@ void Game::sGUI()
         }
         if (ImGui::BeginTabItem("Entity Manager"))
         {
-            
+            auto drawEntityRow = [](std::shared_ptr<Entity> e)
+            {
+                ImGui::PushID(static_cast<int>(e->id()));
+
+                // Color preview (fill color if available)
+                sf::Color preview = e->has<CShape>() ? e->get<CShape>().circle.getFillColor()
+                                                     : sf::Color(128, 128, 128);
+                ImVec4 imguiCol(preview.r / 255.f, preview.g / 255.f, preview.b / 255.f, preview.a / 255.f);
+                ImGui::ColorButton("##color", imguiCol, ImGuiColorEditFlags_NoTooltip, ImVec2(18, 18));
+                ImGui::SameLine();
+
+                // Destroy toggle
+                if (ImGui::Button("D", ImVec2(20, 20)))
+                {
+                    e->destroy();
+                }
+                ImGui::SameLine();
+
+                ImGui::Text("%zu  %s", e->id(), e->tag().c_str());
+                if (e->has<CTransform>())
+                {
+                    auto &t = e->get<CTransform>();
+                    ImGui::SameLine();
+                    ImGui::Text("(%.0f,%.0f)", t.pos.x, t.pos.y);
+                }
+
+                ImGui::PopID();
+            };
+
+            if (ImGui::CollapsingHeader("Entities by Tag", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                const auto &entityMap = m_entities.getEntityMap();
+                for (const auto &[tag, vec] : entityMap)
+                {
+                    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+                    if (ImGui::TreeNodeEx(tag.c_str(), flags))
+                    {
+                        for (auto &e : vec)
+                        {
+                            drawEntityRow(e);
+                        }
+                        ImGui::TreePop();
+                    }
+                }
+            }
+
+            if (ImGui::CollapsingHeader("All Entities"))
+            {
+                for (auto &e : m_entities.getEntities())
+                {
+                    drawEntityRow(e);
+                }
+            }
             
             ImGui::EndTabItem();
         }
