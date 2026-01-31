@@ -12,8 +12,13 @@ SFML_FRAMEWORKS = $(SFML_DIR)/Frameworks
 IMGUI_DIR = vendor/imgui
 IMGUI_SFML_DIR = vendor/imgui-sfml
 
+# Glad paths
+GLAD_DIR = vendor/glad
+GLAD_INCLUDE = $(GLAD_DIR)/include
+GLAD_SOURCE = src/glad.c
+
 # Include paths
-INCLUDES = -I$(SFML_INCLUDE) -I$(IMGUI_DIR) -I$(IMGUI_SFML_DIR)
+INCLUDES = -I$(SFML_INCLUDE) -I$(IMGUI_DIR) -I$(IMGUI_SFML_DIR) -I$(GLAD_INCLUDE)
 
 # Library paths
 LDFLAGS = -L$(SFML_LIB) -Wl,-rpath,$(SFML_LIB)
@@ -36,9 +41,9 @@ IMGUI_SOURCES = $(IMGUI_DIR)/imgui.cpp \
 APP_SOURCES = src/main.cpp src/Game.cpp
 
 # All sources
-SOURCES = $(APP_SOURCES) $(IMGUI_SOURCES)
-OBJECTS = main.o Game.o imgui.o imgui_demo.o imgui_draw.o imgui_tables.o imgui_widgets.o imgui-SFML.o
-EXECUTABLE = sfml-app
+SOURCES = $(APP_SOURCES) $(IMGUI_SOURCES) $(GLAD_SOURCE)
+OBJECTS = Gl.o imgui.o imgui_demo.o imgui_draw.o imgui_tables.o imgui_widgets.o imgui-SFML.o glad.o
+EXECUTABLE = main
 
 # Build rules
 all: $(EXECUTABLE)
@@ -51,6 +56,9 @@ main.o: src/main.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 Game.o: src/Game.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+Gl.o: src/Gl.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 # Compile ImGui files
@@ -71,6 +79,10 @@ imgui_widgets.o: $(IMGUI_DIR)/imgui_widgets.cpp
 
 imgui-SFML.o: $(IMGUI_SFML_DIR)/imgui-SFML.cpp
 	$(CXX) $(CXXFLAGS) -DNDEBUG $(INCLUDES) -c $< -o $@
+
+# Compile Glad loader
+glad.o: $(GLAD_SOURCE)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
 	rm -f $(OBJECTS) $(EXECUTABLE) *.o

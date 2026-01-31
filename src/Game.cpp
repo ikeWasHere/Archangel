@@ -164,7 +164,6 @@ void Game::run()
         if (m_systems.movement) sMovement(dt);
         if (m_systems.lifespan) sLifespan();
         if (m_systems.collision) sCollision();
-        
         sGUI();
         if (m_systems.render) sRender();
     
@@ -409,6 +408,7 @@ void Game::sCollision()
         bool bouncedX = false;
         bool bouncedY = false;
 
+        // Left wall
         if (t.pos.x - r < 0.f)
         {
             t.pos.x = r;
@@ -420,6 +420,7 @@ void Game::sCollision()
             bouncedX = true;
         }
 
+        // Top wall
         if (t.pos.y - r < 0.f)
         {
             t.pos.y = r;
@@ -474,7 +475,7 @@ void Game::sGUI()
                 ImVec4 imguiCol(preview.r / 255.f, preview.g / 255.f, preview.b / 255.f, preview.a / 255.f);
                 ImGui::ColorButton("##color", imguiCol, ImGuiColorEditFlags_NoTooltip, ImVec2(18, 18));
                 ImGui::SameLine();
-
+                
                 // Destroy toggle
                 if (ImGui::Button("D", ImVec2(20, 20)))
                 {
@@ -523,8 +524,6 @@ void Game::sGUI()
 
         ImGui::EndTabBar();
     }
-
-    
     
     ImGui::End();
 }
